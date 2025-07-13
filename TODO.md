@@ -1,201 +1,202 @@
-# VidProcMe – Master TODO (clickable in Obsidian)
+# vidprocme – master todo (clickable in obsidian)
 ---
 
-## High-Level Data Flow
+## high-level data flow
 
 ```text
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  User CLI   │───▶│  HTTP API   │───▶│  Scheduler  │───▶│   Worker    │
-│   vidctl    │    │  /submit    │    │  + Queue    │    │  (GKE Pod)  │
+│  simple Frontend   │───▶│  http api   │───▶│  scheduler  │───▶│   worker    │
+│             │    │  /submit    │    │  + queue    │    │  (gke pod)  │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────┬───────┘
                                                                │
                                                                │ (1) fetch
                                                                ▼
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   GCS IN    │◀───┤   FFmpeg    │◀───┤  LLM Batch  │◀───┤ Frame PNGs  │
-│  original   │    │  splitter   │    │  (GPT-4o)   │    │  (tmpfs)    │
+│   gcs in    │◀───┤   ffmpeg    │◀───┤  llm batch  │◀───┤ frame pngs  │
+│  original   │    │  splitter   │    │  (gpt-4o)   │    │  (tmpfs)    │
 └─────────────┘    └─────┬───────┘    └─────┬───────┘    └─────────────┘
                          │                  │
                          ▼                  ▼
                 ┌─────────────┐    ┌─────────────┐
-                │  GCS OUT    │    │  Postgres   │
+                │  gcs out    │    │  postgres   │
                 │ encoded mp4 │    │ frame_ctx   │
                 └─────────────┘    └─────────────┘
 ```
 
 ---
 
-## 0. Meta & Setup
+## 0. meta & setup
 - [x] `mkdir -p vidcompute && cd vidcompute`
 - [x] `git init`
-- [x] Add `.gitignore` (Go, Node, Terraform, OS)
-- [x] Commit initial scaffold
-- [x] Push to GitHub (private repo)
-- [x] Enable GitHub Actions
-- [x] Install prerequisites (Docker, kubectl, Terraform, Go 1.22+, Node 20+)
+- [x] add `.gitignore` (go, node, terraform, os)
+- [x] commit initial scaffold
+- [x] push to github (private repo)
+- [x] enable github actions
+- [x] install prerequisites (docker, kubectl, terraform, go 1.22+, node 20+)
 
 ---
 
-## 1. Root Directory Skeleton
+## 1. root directory skeleton
 - [x] `mkdir -p cmd/ internal/ web/ infra/ scripts/ .github/workflows`
-- [x] `touch README.md LICENSE Makefile Dockerfile docker-compose.yml`
+- [x] `touch readme.md license makefile dockerfile docker-compose.yml`
 
 ---
 
-## 2. Core Entry Points (`cmd/`)
-- [ ] `cmd/main.go` – bootstrap HTTP server, graceful shutdown
-- [ ] Wire config → logger → router → queue → scheduler
-- [ ] `cmd/vidctl/main.go` – Cobra root
-- [ ] `cmd/vidctl/submit.go` – POST job JSON
-- [ ] `cmd/vidctl/status.go` – GET job status
-- [ ] `cmd/vidctl/watch.go` – SSE logs
-- [ ] Embed version via `ldflags`
+## 2. core entry points (`cmd/`)
+- [x] `cmd/server/main.go` – bootstrap http server, graceful shutdown
+- [ ] wire config → logger → router → queue → scheduler
+- [ ] ~~`cmd/vidctl/main.go` – cobra root~~ ➜ **stretch goal / post-MVP CLI tool**
+- [ ] ~~`cmd/vidctl/submit.go` – post job json~~
+- [ ] ~~`cmd/vidctl/status.go` – get job status~~
+- [ ] ~~`cmd/vidctl/watch.go` – sse logs~~
+- [ ] ~~embed version via `ldflags`~~
 
 ---
 
-## 3. Configuration (`internal/config/`)
-- [ ] `config.go` – struct with env tags
-- [ ] Load via Viper (.yaml + env override)
-- [ ] Validation (required, regex, numeric ranges)
-- [ ] Unit tests with table-driven cases
+## 3. configuration (`internal/config/`)
+- [x] `config.go` – struct with env tags
+- [ ] load via viper (.yaml + env override)
+- [ ] validation (required, regex, numeric ranges)
+- [ ] unit tests with table-driven cases
 
 ---
 
-## 4. HTTP API (`internal/api/`)
-- [ ] Router (`chi`) + middleware (request-id, CORS, recovery, metrics)
-- [ ] `POST /api/v1/jobs` – accept JobSpec JSON
-- [ ] `GET /api/v1/jobs/{id}` – job status & progress
-- [ ] `GET /api/v1/jobs/{id}/logs` – SSE log tail
-- [ ] `GET /api/v1/jobs/{id}/frames` – paginated frame context
-- [ ] `GET /api/v1/search?q=...` – full-text on frame JSON
-- [ ] Serve static `/dashboard` (from `web/`)
-- [ ] OpenAPI spec + Swagger UI
+## 4. http api (`internal/api/`)
+- [ ] router (`gin`) + middleware (request-id, cors, recovery, metrics)
+- [ ] `post /api/v1/jobs` – accept jobspec json OR multipart file upload
+- [ ] `get /api/v1/jobs/{id}` – job status & progress
+- [ ] `get /api/v1/jobs/{id}/logs` – sse log tail
+- [ ] `get /api/v1/jobs/{id}/frames` – paginated frame context
+- [ ] `get /api/v1/search?q=...` – full-text on frame json
+- [ ] serve static `/dashboard` (from `web/`)
+- [ ] openapi spec + swagger ui
 
 ---
 
-## 5. Queue (`internal/queue/`)
-- [ ] Interface `Queue` with enqueue, dequeue, ack, nack
-- [ ] In-memory impl (slice + mutex) for local dev
-- [ ] Redis impl (`go-redis/v9`) with TTL, retry, dead-letter
-- [ ] Exponential back-off policy config
-- [ ] Unit tests with `miniredis`
+## 5. queue (`internal/queue/`)
+- [ ] interface `queue` with enqueue, dequeue, ack, nack
+- [ ] in-memory impl (slice + mutex) for local dev
+- [ ] redis impl (`go-redis/v9`) with ttl, retry, dead-letter
+- [ ] exponential back-off policy config
+- [ ] unit tests with `miniredis`
 
 ---
 
-## 6. Scheduler (`internal/scheduler/`)
-- [ ] GPU node discovery interface
-- [ ] FIFO + priority queue (high/normal/low)
-- [ ] Bin-packing (first-fit decreasing)
-- [ ] Metrics: `scheduler_queue_depth`, `scheduler_jobs_scheduled_total`
-- [ ] Integration test on KinD
+## 6. scheduler (`internal/scheduler/`)
+- [ ] gpu node discovery interface
+- [ ] fifo + priority queue (high/normal/low)
+- [ ] bin-packing (first-fit decreasing)
+- [ ] metrics: `scheduler_queue_depth`, `scheduler_jobs_scheduled_total`
+- [ ] integration test on kind
 
 ---
 
-## 7. Transcoder (`internal/transcoder/`)
-- [ ] `JobSpec` struct (input, outputs, codec, bitrate, enableLLM bool)
-- [ ] `Worker.Run()` – download → FFmpeg → upload
-- [ ] FFmpeg progress parser (`frame=`, `fps=`, `time=`)
-- [ ] Side-car JSON manifest for multi-bitrate HLS
-- [ ] Pre-signed URL generation
+## 7. transcoder (`internal/transcoder/`)
+- [ ] `jobspec` struct (input, outputs, codec, bitrate, enable_llm bool)
+- [ ] `worker.run()` – download → ffmpeg → upload
+- [ ] ffmpeg progress parser (`frame=`, `fps=`, `time=`)
+- [ ] side-car json manifest for multi-bitrate hls
+- [ ] pre-signed url generation
 
 ---
 
-## 8. LLM Frame-Context (NEW)
-- [ ] `internal/llm/extractor.go` – FFmpeg scene-detect or fixed fps
-- [ ] `internal/llm/client.go` – interface + OpenAI impl
-- [ ] Rate-limiting & retry logic
-- [ ] `internal/llm/store.go` – batch insert to Postgres
-- [ ] Migration `migrations/0001_create_frame_context.sql`
-- [ ] Add secrets for LLM key (GCP Secret Manager)
-- [ ] Update infra node pool CPU/RAM for LLM
+## 8. llm frame-context (new)
+- [ ] `internal/llm/extractor.go` – ffmpeg scene-detect or fixed fps
+- [ ] `internal/llm/client.go` – interface + openai impl
+- [ ] rate-limiting & retry logic
+- [ ] `internal/llm/store.go` – batch insert to postgres
+- [ ] migration `migrations/0001_create_frame_context.sql`
+- [ ] add secrets for llm key (gcp secret manager)
+- [ ] update infra node pool cpu/ram for llm
 
 ---
 
-## 9. Monitor (`internal/monitor/`)
-- [ ] Prometheus registry singleton
-- [ ] Counters: `jobs_total`, `jobs_failed_total`
-- [ ] Histograms: `job_duration_seconds`, `llm_inference_seconds`
-- [ ] Structured logs (Zap)
-- [ ] Grafana dashboard JSON (infra auto-import)
+## 9. monitor (`internal/monitor/`)
+- [ ] prometheus registry singleton
+- [ ] counters: `jobs_total`, `jobs_failed_total`
+- [ ] histograms: `job_duration_seconds`, `llm_inference_seconds`
+- [ ] structured logs (zap)
+- [ ] grafana dashboard json (infra auto-import)
 
 ---
 
-## 10. Web Dashboard (`web/`)
-- [ ] `dashboard.html` – Bulma CSS skeleton
+## 10. web dashboard (`web/`)
+- [ ] `dashboard.html` – bulma css skeleton
 - [ ] `js/jobs.js` – auto-refresh table
-- [ ] `js/logs.js` – SSE modal for live logs
+- [ ] `js/logs.js` – sse modal for live logs
 - [ ] `js/frames.js` – timeline scrubber with frame-by-frame context
-- [ ] Dark-mode toggle
-- [ ] Bundle with esbuild
+- [ ] dark-mode toggle
+- [ ] bundle with esbuild
 
 ---
 
-## 11. Infrastructure (`infra/`)
-- [ ] `cdktf.json` – TypeScript CDKTF init
-- [ ] `infra/gcp/main.ts` – GKE Autopilot + CloudSQL + GCS + Secret Manager
-- [ ] `infra/local/main.ts` – KinD + Redis + Prometheus + Grafana
-- [ ] Shared constructs (`VidComputeService`, `VidComputeQueue`)
+## 11. infrastructure (`infra/`)
+- [ ] `cdktf.json` – typescript cdktf init
+- [ ] `infra/gcp/main.ts` – gke autopilot + cloudsql + gcs + secret manager
+- [ ] `infra/local/main.ts` – kind + redis + prometheus + grafana
+- [ ] shared constructs (`vidcomputeservice`, `vidcomputequeue`)
 - [ ] `make infra/local/up` one-command dev stack
 
 ---
 
-## 12. Docker & Compose
-- [ ] Multi-stage Dockerfile (distroless)
+## 12. docker & compose
+- [ ] multi-stage dockerfile (distroless)
 - [ ] `.dockerignore`
 - [ ] `docker-compose.yml` (local dev)
 - [ ] `compose.dev.yml` override (volume mounts, hot-reload)
 
 ---
 
-## 13. CI/CD (`.github/workflows/`)
-- [ ] `build.yml` – Docker build & push
+## 13. ci/cd (`.github/workflows/`)
+- [ ] `build.yml` – docker build & push
 - [ ] `test.yml` – `go test ./...`
-- [ ] `infra-plan.yml` – Terraform plan on PR
+- [ ] `infra-plan.yml` – terraform plan on pr
 - [ ] `infra-apply.yml` – manual apply
-- [ ] `e2e-test.yml` – KinD + submit job + assert completion
-- [ ] `release.yml` – GoReleaser for `vidctl` binaries
+- [ ] `e2e-test.yml` – kind + submit job + assert completion
+- [ ] ~~`release.yml` – goreleaser for `vidctl` binaries~~  ➜ **stretch goal / post-MVP CLI tool**
 
 ---
 
-## 14. Scripts (`scripts/`)
-- [ ] `dev-up.sh` – start KinD + infra/local
+## 14. scripts (`scripts/`)
+- [ ] `dev-up.sh` – start kind + infra/local
 - [ ] `dev-down.sh` – tear down
 - [ ] `load-sample-video.sh` – upload test clip
 - [ ] `generate-ffmpeg-cmd.sh` – helper script
 
 ---
 
-## 15. Security & Compliance
-- [ ] Container scan (Trivy) in CI
-- [ ] SLSA provenance via GitHub OIDC
-- [ ] NetworkPolicies (deny-all, allow-apiserver)
-- [ ] Workload Identity for GKE → GCS/CloudSQL
+## 15. security & compliance
+- [ ] container scan (trivy) in ci
+- [ ] slsa provenance via github oidc
+- [ ] networkpolicies (deny-all, allow-apiserver)
+- [ ] workload identity for gke → gcs/cloudsql
 
 ---
 
-## 16. Docs & Runbooks
-- [ ] `docs/architecture.png` – C4 diagram
-- [ ] `docs/openapi.yaml` – OpenAPI 3.1
+## 16. docs & runbooks
+- [ ] `docs/architecture.png` – c4 diagram
+- [ ] `docs/openapi.yaml` – openapi 3.1
 - [ ] `docs/runbook.md` – on-call playbooks
-- [ ] `docs/costs.md` – GCP cost calculator
-- [ ] `docs/build-log.md` – Obsidian daily log
+- [ ] `docs/costs.md` – gcp cost calculator
+- [ ] `docs/build-log.md` – obsidian daily log
 
 ---
 
-## 17. Final Validation
-- [ ] Local e2e: upload 5 s clip → encoded + 150 frame rows
-- [ ] Cloud e2e: same on GKE Autopilot
-- [ ] Chaos: kill worker, assert retry & DLQ
-- [ ] Load: 100 concurrent jobs under 5 min
+## 17. final validation
+- [ ] local e2e: upload 5 s clip → encoded + 150 frame rows
+- [ ] cloud e2e: same on gke autopilot
+- [ ] chaos: kill worker, assert retry & dlq
+- [ ] load: 100 concurrent jobs under 5 min
 
 ---
 
-
----
 ---
 
+## Stretch Goals / Post-MVP
+- [ ] `vidctl` CLI tool (cobra, submit/status/watch commands)
+- [ ] release binaries via goreleaser
 
-# AUTHOR NOTES
+# author notes
 
 
-This is probably good enough for what I want to do for now
+this is probably good enough for what i want to do for now
