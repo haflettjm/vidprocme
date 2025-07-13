@@ -37,8 +37,8 @@
 ---
 
 ## 1. Root Directory Skeleton
-- [ ] `mkdir -p cmd/ internal/ web/ infra/ scripts/ .github/workflows`
-- [ ] `touch README.md LICENSE Makefile Dockerfile docker-compose.yml`
+- [x] `mkdir -p cmd/ internal/ web/ infra/ scripts/ .github/workflows`
+- [x] `touch README.md LICENSE Makefile Dockerfile docker-compose.yml`
 
 ---
 
