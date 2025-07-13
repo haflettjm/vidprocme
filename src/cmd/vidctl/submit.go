@@ -13,7 +13,7 @@ type Video struct {
 	EnableLLM   bool
 }
 
-func NewVideo(id, title, description string) *Video {
+func NewVideo(location string) *Video {
 	return &Video{
 		ID:          id,
 		Title:       title,
@@ -21,6 +21,6 @@ func NewVideo(id, title, description string) *Video {
 	}
 }
 
-func SubmitVideo(videoID string) error {
+func SubmitVideo(video *Video) error {
 	return fmt.Errorf("not implemented")
 }

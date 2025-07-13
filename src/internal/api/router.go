@@ -3,48 +3,61 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 	"vidprocme/internal/config"
-	"vidprocme/internal/utils"
+	"vidprocme/internal/queue"
+	"vidprocme/internal/scheduler"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-func InitRouter(cfg *config.Config) *gin.Engine {
+func InitRouter(cfg *config.Config, logger *zap.Logger, sched *scheduler.Scheduler, queue *queue.Queue) *gin.Engine {
 	router := gin.Default()
 	router.GET("/greet", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": fmt.Sprintf("Success %v-enviornment is running", cfg.EnvType),
 			"time":    time.Now().Format(time.RFC3339),
 		})
-		utils.ConsoleLog("Hello From the Console! %s\n", time.Now()) // this should work??
+		logger.Info("Hello From the Console!", zap.String("time", time.Now().Format(time.RFC3339)))
+	})
+
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "OK",
+			"time":   time.Now().Format(time.RFC3339),
+		})
+		logger.Info("Health check successful", zap.String("time", time.Now().Format(time.RFC3339)))
 	})
 
 	return router
 }
 
-func RunRouter(cfg *config.Config, router *gin.Engine) {
+func RunRouter(cfg *config.Config, router *gin.Engine, logger *zap.Logger, sched *scheduler.Scheduler, queue *queue.Queue) {
 	err := router.Run(":" + strconv.Itoa(cfg.Port))
 	if err != nil {
-		utils.ConsoleLog("Error running router: %v\n", err)
+		logger.Error("Error running router", zap.Error(err))
 	}
 }
 
-func StartServer(cfg *config.Config) {
-	router := InitRouter(cfg)
-	RunRouter(cfg, router)
+func StartServer(cfg *config.Config, logger *zap.Logger, sched *scheduler.Scheduler, queue *queue.Queue) {
+	router := InitRouter(cfg, logger, sched, queue)
+	RunRouter(cfg, router, logger, sched, queue)
 }
 
-func StopServer() {
+func StopServer(logger *zap.Logger) {
 	// Implement server stop logic here
+	logger.Info("Server stopped")
+	os.Exit(0)
 }
 
 func ShutdownServer() {
 	// Implement server shutdown logic here
 }
 
-func RestartServer(cfg *config.Config) {
-	StopServer()
-	StartServer(cfg)
+func RestartServer(cfg *config.Config, logger *zap.Logger, sched *scheduler.Scheduler, queue *queue.Queue) {
+	StopServer(logger)
+	StartServer(cfg, logger, sched, queue)
 }

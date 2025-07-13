@@ -5,70 +5,11 @@ import (
 	"os"
 	router "vidprocme/internal/api"
 	"vidprocme/internal/config"
+	"vidprocme/internal/queue"
+	"vidprocme/internal/scheduler"
 
-	"github.com/google/uuid"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
-
-type Handler struct{}
-
-type Queue struct {
-	logger *zap.Logger
-	Jobs   []Job
-}
-
-type Job struct {
-	ID       string
-	Data     string
-	Status   string
-	Worker   string
-	WorkerID string
-	Topic    string
-}
-
-type Scheduler struct {
-	logger *zap.Logger
-	queue  *Queue
-	cfg    *config.Config
-}
-
-func newQueue(logger *zap.Logger) *Queue {
-	return &Queue{
-		logger: logger,
-	}
-}
-
-func newJob(data string, topic string) Job {
-	return Job{
-		ID:       uuid.New().String(),
-		Data:     "",
-		Status:   "pending",
-		Worker:   "",
-		WorkerID: "",
-		Topic:    topic,
-	}
-}
-
-func (q *Queue) addJob(job Job) {
-	q.Jobs = append(q.Jobs, job)
-}
-
-func (q *Queue) updateJob(job Job) {
-	for i, j := range q.Jobs {
-		if j.ID == job.ID {
-			q.Jobs[i] = job
-			return
-		}
-	}
-}
-
-func newScheduler(logger *zap.Logger, queue *Queue, cfg *config.Config) *Scheduler {
-	return &Scheduler{
-		logger: logger,
-		queue:  queue,
-		cfg:    cfg,
-	}
-}
 
 func main() {
 	// Initialize the configuration
@@ -79,10 +20,10 @@ func main() {
 	}
 
 	logger := zap.NewExample()
-	queue := newQueue(logger)
-	sched := newScheduler(logger, queue, cfg)
+	q := queue.New(logger, cfg)
+	sched := scheduler.New(logger, q, cfg)
 
 	fmt.Println("Server started")
-	router.StartServer(cfg, queue, sched, logger)
+	router.StartServer(cfg, logger, sched, q)
 
 }
