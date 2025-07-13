@@ -1,122 +1,60 @@
 package config
 
 import (
-	"os"
-	"strconv"
+	"fmt"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	// Load configs
-	ProjectID            string
-	Location             string
-	Port                 int
-	LogLevel             string
-	EnvType              string
-	LogBucket            string
-	VidBucket            string
-	TargetBucket         string
-	LogBucketPre         string
-	VideoBucketPre       string
-	TargetBucketPre      string
-	SignedUrlExpiry      int
-	VideoMaxMB           int
-	UploadTimeoutMin     int
-	SubscriptionJsonPath string
-	CacheHost            string
-	CachePort            int
-	CachePass            string
-	CacheDB              int
-	CacheMaxIdle         int
-	CacheMaxConn         string
-	CacheConnTimeout     int
-	CacheReadTimeout     int
-	CacheWriteTimeout    int
-	CacheUploadPre       string
-	CacheTargetPre       string
-	CacheDevPre          string
-	AllowedOrigins       []string
-	EnforceHttps         bool
-	RateLimitPerMin      int
-	JWTAudience          string
+	ProjectID            string   `mapstructure:"PROJECT_ID"`
+	Location             string   `mapstructure:"P_LOCATION"`
+	Port                 int      `mapstructure:"PORT"`
+	LogLevel             string   `mapstructure:"LOG_LEVEL"`
+	EnvType              string   `mapstructure:"P_ENV"`
+	LogBucket            string   `mapstructure:"L_BUCKET_NAME"`
+	VidBucket            string   `mapstructure:"VID_BUCKET_NAME"`
+	TargetBucket         string   `mapstructure:"LLM_TARGET_BUCKET_NAME"`
+	LogBucketPre         string   `mapstructure:"L_OBJECT_PREFIX"`
+	VideoBucketPre       string   `mapstructure:"VID_OBJECT_PREFIX"`
+	TargetBucketPre      string   `mapstructure:"T_OBJECT_PREFIX"`
+	SignedUrlExpiry      int      `mapstructure:"SIGNED_URL_EXPIRY"`
+	VideoMaxMB           int      `mapstructure:"VIDEO_MAX_MB"`
+	UploadTimeoutMin     int      `mapstructure:"UPLOAD_TIMEOUT_MIN"`
+	SubscriptionJsonPath string   `mapstructure:"SUBSCRIPTION_JSON_PATH"`
+	CacheHost            string   `mapstructure:"CACHE_HOST"`
+	CachePort            int      `mapstructure:"CACHE_PORT"`
+	CachePass            string   `mapstructure:"CACHE_PASS"`
+	CacheDB              int      `mapstructure:"CACHE_DB"`
+	CacheMaxIdle         int      `mapstructure:"CACHE_MAX_IDLE"`
+	CacheMaxConn         string   `mapstructure:"CACHE_MAX_CONN"`
+	CacheConnTimeout     int      `mapstructure:"CACHE_CONN_TIMEOUT"`
+	CacheReadTimeout     int      `mapstructure:"CACHE_READ_TIMEOUT"`
+	CacheWriteTimeout    int      `mapstructure:"CACHE_WRITE_TIMEOUT"`
+	CacheUploadPre       string   `mapstructure:"CACHE_UPLOAD_PRE"`
+	CacheTargetPre       string   `mapstructure:"CACHE_TARGET_PRE"`
+	CacheDevPre          string   `mapstructure:"CACHE_DEV_PRE"`
+	AllowedOrigins       []string `mapstructure:"ALLOWED_ORIGINS"` // comma-split handled below
+	EnforceHttps         bool     `mapstructure:"ENFORCE_HTTPS"`
+	RateLimitPerMin      int      `mapstructure:"RATE_LIMIT_PER_MIN"`
+	JWTAudience          string   `mapstructure:"JWT_AUDIENCE"`
 }
 
-func (c *Config) Load() (*Config, error) {
-	var err error
+func (c *Config) Load() error {
+	viper.SetConfigFile(".env")
+	viper.AutomaticEnv()
+	_ = viper.ReadInConfig()
 
-	// CORE
-	c.ProjectID = os.Getenv("PROJECT_ID")
-	c.Location = os.Getenv("P_LOCATION")
-	c.Port, err = strconv.Atoi(os.Getenv("PORT"))
-	if err != nil {
-		return nil, err
-	}
-	c.LogLevel = os.Getenv("LOG_LEVEL")
-	c.EnvType = os.Getenv("P_ENV")
-
-	// CLOUD OR SERVER LIMITS
-	c.LogBucket = os.Getenv("L_BUCKET_NAME")
-	c.TargetBucket = os.Getenv("LLM_TARGET_BUCKET_NAME")
-	c.VidBucket = os.Getenv("VID_BUCKET_NAME")
-	c.TargetBucketPre = os.Getenv("T_OBJECT_PREFIX")
-	c.VideoBucketPre = os.Getenv("VID_OBJECT_PREFIX")
-	c.LogBucketPre = os.Getenv("L_OBJECT_PREFIX")
-	c.SignedUrlExpiry, err = strconv.Atoi(os.Getenv("SIGNED_URL_EXPIRY"))
-	if err != nil {
-		return nil, err
-	}
-	c.VideoMaxMB, err = strconv.Atoi(os.Getenv("VIDEO_MAX_MB"))
-	if err != nil {
-		return nil, err
-	}
-	c.UploadTimeoutMin, err = strconv.Atoi(os.Getenv("UPLOAD_TIMEOUT_MIN"))
-	if err != nil {
-		return nil, err
+	// automatic string→int, string→bool via mapstructure
+	if err := viper.Unmarshal(c); err != nil {
+		return fmt.Errorf("unmarshal config: %w", err)
 	}
 
-	// PUB SUB JSON
-	c.SubscriptionJsonPath = os.Getenv("SUBSCRIPTION_JSON_PATH")
+	// comma-split string → slice
+	if origins := viper.GetString("ALLOWED_ORIGINS"); origins != "" {
+		c.AllowedOrigins = strings.Split(origins, ",")
+	}
 
-	// REDIS OR CACHE ENV
-	c.CacheHost = os.Getenv("CACHE_HOST")
-	c.CachePort, err = strconv.Atoi(os.Getenv("CACHE_PORT"))
-	if err != nil {
-		return nil, err
-	}
-	c.CachePass = os.Getenv("CACHE_PASS")
-	c.CacheDB, err = strconv.Atoi(os.Getenv("CACHE_DB"))
-	if err != nil {
-		return nil, err
-	}
-	c.CacheMaxIdle, err = strconv.Atoi(os.Getenv("CACHE_MAX_IDLE"))
-	if err != nil {
-		return nil, err
-	}
-	c.CacheMaxConn = os.Getenv("CACHE_MAX_CONN")
-	c.CacheConnTimeout, err = strconv.Atoi(os.Getenv("CACHE_CONN_TIMEOUT"))
-	if err != nil {
-		return nil, err
-	}
-	c.CacheReadTimeout, err = strconv.Atoi(os.Getenv("CACHE_READ_TIMEOUT"))
-	if err != nil {
-		return nil, err
-	}
-	c.CacheWriteTimeout, err = strconv.Atoi(os.Getenv("CACHE_WRITE_TIMEOUT"))
-	if err != nil {
-		return nil, err
-	}
-	c.CacheUploadPre = os.Getenv("CACHE_UPLOAD_PRE")
-	c.CacheTargetPre = os.Getenv("CACHE_TARGET_PRE")
-	c.CacheDevPre = os.Getenv("CACHE_DEV_PRE")
-
-	// SERVER LIMITS OR CORS
-	c.AllowedOrigins = strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-	c.EnforceHttps = os.Getenv("ENFORCE_HTTPS") == "true"
-	c.RateLimitPerMin, err = strconv.Atoi(os.Getenv("RATE_LIMIT_PER_MIN"))
-	if err != nil {
-		return nil, err
-	}
-	c.JWTAudience = os.Getenv("JWT_AUDIENCE")
-
-	return c, nil
+	return nil
 }
