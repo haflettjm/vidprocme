@@ -26,14 +26,13 @@
 ---
 
 ## 0. Meta & Setup
-- [ ] `mkdir -p vidcompute && cd vidcompute`
-- [ ] `git init`
-- [ ] Add `.gitignore` (Go, Node, Terraform, OS)
-- [ ] Commit initial scaffold
-- [ ] Push to GitHub (private repo)
-- [ ] Enable GitHub Actions
-- [ ] Install prerequisites (Docker, kubectl, Terraform, Go 1.22+, Node 20+)
-- [ ] Install Obsidian community plugin “Tasks” for checkbox sync (optional)
+- [x] `mkdir -p vidcompute && cd vidcompute`
+- [x] `git init`
+- [x] Add `.gitignore` (Go, Node, Terraform, OS)
+- [x] Commit initial scaffold
+- [x] Push to GitHub (private repo)
+- [x] Enable GitHub Actions
+- [x] Install prerequisites (Docker, kubectl, Terraform, Go 1.22+, Node 20+)
 
 ---
 
@@ -191,7 +190,6 @@
 
 ---
 
-```
 
 ---
 ---
