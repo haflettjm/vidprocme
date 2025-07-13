@@ -1,0 +1,25 @@
+{
+  "llm": {
+    "subscription": "projects/${GCP_PROJECT_ID}/subscriptions/llm-worker-sub",
+    "topic": "projects/${GCP_PROJECT_ID}/topics/video-ready-for-llm",
+    "dlq": {
+      "topic": "projects/${GCP_PROJECT_ID}/topics/llm-dlq-topic",
+      "subscription": "projects/${GCP_PROJECT_ID}/subscriptions/llm-worker-dlq",
+      "maxDeliveryAttempts": 5
+    }
+  },
+  "jobs": {
+    "subscription": "projects/${GCP_PROJECT_ID}/subscriptions/jobs-worker-sub",
+    "topic": "projects/${GCP_PROJECT_ID}/topics/new-job",
+    "dlq": {
+      "topic": "projects/${GCP_PROJECT_ID}/topics/jobs-dlq-topic",
+      "subscription": "projects/${GCP_PROJECT_ID}/subscriptions/jobs-worker-dlq",
+      "maxDeliveryAttempts": 3
+    }
+  },
+  "logs": {
+    "subscription": "projects/${GCP_PROJECT_ID}/subscriptions/logs-sub",
+    "topic": "projects/${GCP_PROJECT_ID}/topics/app-logs",
+    "dlq": null
+  }
+}
