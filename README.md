@@ -2,13 +2,18 @@
 
 **Distributed Video Processing Pipeline in Go**
 Accelerated video analysis and LLM-powered batch processing, designed for real-world scale.
+```
+  NOTE: This project is still under active development and may contain breaking changes.
+  ALSO: Contributions are welcome!
+  ONE MORE: I really only did generate the README with jippity #sorry-not-sorry it would have been too much work.
+```
+
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Build](https://github.com/haflettjm/vidprocme/actions/workflows/build.yml/badge.svg)](https://github.com/haflettjm/vidprocme/actions)
 [![Go Reference](https://pkg.go.dev/badge/github.com/haflettjm/vidprocme.svg)](https://pkg.go.dev/github.com/haflettjm/vidprocme)
 
 ---
-
 ## Project Purpose
 
 While interviewing with Sieve Data, I wanted to move beyond a simple demo and build a complete, production-ready video pipeline. This project shows how to run a distributed, cloud-ready video system that is practical and scalable—not just an academic toy. The focus is on:
@@ -240,5 +245,3 @@ Project started: July 8, 2025
 * [docs/](docs/): (WIP) Architecture diagrams, OpenAPI spec, runbooks
 
 ---
-
-Let me know if you want it even more conversational, or if you have any other tone/style requests.
